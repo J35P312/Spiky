@@ -56,4 +56,4 @@ def run(
 
     prediction = "male" if mean_y_frac_cov >= y_frac_threshold else "female"
 
-    out.write(f"{coverage_bed_path},{prediction}\n")
+    out.write(f"{coverage_bed_path},{prediction},{mean_y_frac_cov}\n")

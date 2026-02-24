@@ -1,6 +1,42 @@
 import sys
 import json
 import statistics
+import numpy as np
+
+def compute_median_cov_per_sample(coverage_bed_file, ok_bins):
+    """
+    Compute median coverage for a given chromosome in a sample coverage BED.
+    """
+    cov_values = []
+
+    with open(coverage_bed_file) as f:
+        next(f)  # skip header
+        for line in f:
+            parts = line.strip().split('\t')
+            chr_ = parts[0]
+            start = int(parts[1])
+            end = int(parts[2])
+            cov = float(parts[4])  # coverage fraction column in coverage BED
+
+            if (chr_, start, end) in ok_bins:
+                cov_values.append(cov)
+
+    return np.median(cov_values) if cov_values else 0.0
+
+def load_ok_bins(regions_bed, chromosome):
+    """
+    Load OK bins from generate_regions BED for a given chromosome.
+    """
+    ok_bins = set()
+    with open(regions_bed) as f:
+        for line in f:
+            parts = line.strip().split('\t')
+            chr_ = parts[0]
+            start = int(parts[1])
+            end = int(parts[2])
+            if chr_ == chromosome:
+                ok_bins.add((chr_, start, end))
+    return ok_bins
 
 
 def run(
@@ -19,57 +55,32 @@ def run(
     with open(model_file) as f:
         model = json.load(f)
 
-    slope = float(model["slope"])
-    intercept = float(model["intercept"])
+    slopeY = model["FFY"]["slope"]
+    interceptY = model["FFY"]["intercept"]
+    slopeX = model["FFX"]["slope"]
+    interceptX = model["FFX"]["intercept"]
 
     # --------------------------------------------------
     # Load regions
     # --------------------------------------------------
-    regions = set()
-    with open(regions_bed) as f:
-        for line in f:
-            if not line.strip():
-                continue
-            chrom, start, end, *_ = line.rstrip().split("\t")
-            if chrom not in ("Y", "chrY"):
-                continue
-            regions.add((chrom, int(start), int(end)))
-
-    if not regions:
-        raise ValueError("No chrY regions found in regions BED")
+    ok_bins_Y = load_ok_bins(regions_bed, "Y")
+    ok_bins_X = load_ok_bins(regions_bed, "X")
 
     # --------------------------------------------------
     # Extract chrY frac_cov values
     # --------------------------------------------------
-    frac_covs = []
+    lines = ["Sample\tmedian_chrY\tFFY\tFFX"]
 
-    with open(coverage_bed) as bed:
-        for line in bed:
-            if not line.strip():
-                continue
-            chrom, start, end, mean_cov, frac_cov, lowq_frac = line.rstrip().split("\t")
+    median_chrY = compute_median_cov_per_sample(coverage_bed, ok_bins_Y)
+    median_chrX = compute_median_cov_per_sample(coverage_bed, ok_bins_X)
 
-            key = (chrom, int(start), int(end))
-            if key in regions:
-                frac_covs.append(float(frac_cov))
+    FFY_pred = slopeY * median_chrY + interceptY
+    FFX_pred = slopeX * median_chrX + interceptX
 
-    if not frac_covs:
-        raise ValueError("No matching chrY regions found in coverage BED")
+    lines.append(f"{coverage_bed}\t{median_chrY:.4f}\t{FFY_pred:.4f}\t{FFX_pred:.4f}")
 
-    chrY_median_fraction = statistics.median(frac_covs)
-
-    # --------------------------------------------------
-    # Predict FFY
-    # --------------------------------------------------
-    ffy = slope * chrY_median_fraction + intercept
-
+    output_text = "\n".join(lines)
     # --------------------------------------------------
     # Output
     # --------------------------------------------------
-    out.write(
-        "bed_file\tchrY_median_fraction\tFFY\n"
-    )
-    out.write(
-        f"{coverage_bed}\t{chrY_median_fraction:.6f}\t{ffy:.6f}\n"
-    )
-
+    print(output_text)
