@@ -1,0 +1,10 @@
+{
+  "FFY": {
+    "slope": 100,
+    "intercept": 0
+  },
+  "FFX": {
+    "slope": -100,
+    "intercept": 0
+  }
+}
