@@ -2,7 +2,8 @@ import sys
 import json
 import statistics
 import numpy as np
-
+#import scipy.stats
+#from sklearn.linear_model import LinearRegression
 
 def run(
     training_csv,
@@ -90,8 +91,14 @@ def run(
     y = np.array(y_vals)
 
     # Fit linear regression
+
     slopeY, interceptY = np.polyfit(x_ffy, y, 1)
     slopeX, interceptX = np.polyfit(x_ffx, y, 1)
+
+    beta_zero_intercept = slopeY + (interceptY * np.mean(x_ffy)) / np.mean(x_ffy**2)
+    slopeY=beta_zero_intercept
+
+    interceptY=0
 
     # Save models to JSON
     model_dict = {
