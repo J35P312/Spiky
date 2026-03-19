@@ -2,13 +2,13 @@
 import argparse
 import sys
 
-import coverage_bed
-import predict_sex
-import generate_regions
-import model
-import predict
+from spiky import coverage_bed
+from spiky import predict_sex
+from spiky import generate_regions
+from spiky import model
+from spiky import predict
 
-TOOL_VERSION = "0.0.0"
+TOOL_VERSION = "0.1.0"
 
 def main():
     parser = argparse.ArgumentParser(

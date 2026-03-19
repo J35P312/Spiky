@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="Spiky",  # Change this if you want a different package name
-    version="0.0.0",  # Start version, update as needed
+    version="0.1.0",  # Start version, update as needed
     author="Your Name",
     author_email="your.email@example.com",
     description="A short description of the Spiky project",
